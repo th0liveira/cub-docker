@@ -1,0 +1,5 @@
+:8080 {
+  root * /opt/linktree
+	file_server
+	try_files {path} /index.html
+}

@@ -1,0 +1,17 @@
+{
+  "title": "Docker",
+  "ip": "10.33.0.2",
+  "services": [
+    {
+      "id": 1,
+      "ip": "127.0.0.1",
+      "project": "name-project",
+      "actions": [
+        { "type": "doc", "link": "http://127.0.0.1:9090/doc", "label": "E2E" }
+      ],
+      "hosts": [
+        "loca.name-project.com.br"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+local.c3-admin.com.br {
+  tls /mnt/certs/local.c3-admin.com.br.pem /mnt/certs/local.c3-admin.com.br-key.pem
+
+  reverse_proxy /api/v1/* http://c3-admin-bff:3000
+
+  reverse_proxy http://c3-admin-app:3000
+
+
+  # Websockets, if headers match
+  reverse_proxy /ws http://c3-admin-app:3000 {
+    header_up Upgrade {http.request.header.Upgrade}
+    header_up Connection {http.request.header.Connection}
+    header_up Host {http.request.host}
+  }
+}
+
+local.c3-admin-partner.com.br {
+  tls /mnt/certs/local.c3-admin-partner.com.br.pem /mnt/certs/local.c3-admin-partner.com.br-key.pem
+
+  reverse_proxy /api/v1/* http://c3-admin-bff:3000
+
+  reverse_proxy http://c3-admin-app:3001
+
+  # Websockets, if headers match
+  reverse_proxy /ws http://c3-admin-app:3001 {
+    header_up Upgrade {http.request.header.Upgrade}
+    header_up Connection {http.request.header.Connection}
+    header_up Host {http.request.host}
+  }
+}

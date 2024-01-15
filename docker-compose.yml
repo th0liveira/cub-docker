@@ -1,0 +1,180 @@
+version: '3'
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${NETWORK_PREFIX}.0/16
+
+services:
+  # -----------
+  # -- Commons
+  # -----------
+  caddy:
+    container_name: ${PROJECT}_caddy
+    hostname: ${PROJECT}_caddy
+    image: ${PROJECT}/caddy:latest
+    build:
+      context: ./docker-image/caddy
+      dockerfile: Dockerfile
+      args:
+        DOCKER_VERSION_CADDY: ${DOCKER_VERSION_CADDY}
+    restart: unless-stopped
+    networks:
+      default:
+        ipv4_address: ${NETWORK_PREFIX}.2
+    expose:
+      - 8080
+      - 80
+      - 443
+    environment:
+      HISTFILE: /mnt/bash_history/.bash_history
+      # Cert
+      CA_CERT_COUNTRY: '${CA_COUNTRY}'
+      CA_CERT_STATE: '${CA_STATE}'
+      CA_CERT_CITY: '${CA_CITY}'
+      CA_CERT_ORGANIZATION: '${CA_ORGANIZATION}'
+      CA_CERT_ORGANIZATION_UNIT: '${CA_ORGANIZATION_UNIT}'
+      CA_CERT_EMAIL: '${CA_EMAIL}'
+    working_dir: '/mnt'
+    volumes:
+      # -- configs
+      - './config/linktree-data.json:/mnt/linktree-data.json'
+      - './config/vhosts:/mnt/vhosts'
+      - './config/caddy.d:/mnt/caddy.d'
+      # -- docker-data
+      - './.data/certs:/mnt/certs:rw'
+
+  # TODO posgres
+
+
+  # TODO dnsmasq
+
+  # TODO localstash
+
+  c3-sdk:
+    # TODO profiles
+    container_name: ${PROJECT}_c3_sdk
+    hostname: ${PROJECT}_c3_sdk
+    build:
+      context: ./docker-image/node
+      dockerfile: Dockerfile
+      args:
+        DOCKER_VERSION_NODE: ${DOCKER_VERSION_NODE}
+    image: ${PROJECT}/node:latest
+    restart: unless-stopped
+    environment:
+      HISTFILE: /mnt/bash_history/.bash_history
+      # Node
+      BIN_TARGET: '["native"]'
+      XDG_CACHE_HOME: /mnt/cache/
+    networks:
+      default:
+        ipv4_address: ${NETWORK_PREFIX}.6
+    working_dir: '/app'
+    volumes:
+      - '${NPM_PATH}:/mnt/cache:rw'
+      # -- configs
+      - './config/processes/cub-cash-collection-sdk.sh:/mnt/process.sh'
+      # -- project
+      - '../cub-cash-collection-sdk:/app'
+
+  # -----------
+  # -- C3
+  # -----------
+  #TODO c3
+
+  # -----------
+  # -- C3 Admin
+  # -----------
+  c3-admin-bff:
+    # TODO profiles
+    container_name: ${PROJECT}_c3_admin_bff
+    hostname: ${PROJECT}_c3_admin_bff
+    build:
+      context: ./docker-image
+      dockerfile: Dockerfile
+      args:
+        DOCKER_VERSION_NODE: ${DOCKER_VERSION_NODE}
+    image: ${PROJECT}/node:latest
+    restart: unless-stopped
+    environment:
+      HISTFILE: /mnt/bash_history/.bash_history
+      # Node
+      BIN_TARGET: '["native"]'
+      XDG_CACHE_HOME: /mnt/cache/
+      # keys
+      CUB_GIT_PKG_TOKEN: '${CUB_GIT_PKG_TOKEN}'
+      # AWS
+      AWS_REGION: '${AWS_REGION}'
+      AWS_ACCESS_KEY_ID: '${AWS_ACCESS_KEY_ID}'
+      AWS_SECRET_ACCESS_KEY: '${AWS_SECRET_ACCESS_KEY}'
+      AWS_SESSION_TOKEN: '${AWS_SESSION_TOKEN}'
+      #AWS_ENDPOINT: 'http://localstack:4566'
+      # Custom CA to Node
+      NODE_EXTRA_CA_CERTS: /usr/local/share/ca-certificates/ca.crt
+      # ENV
+      ENV: '${ENV}'
+    expose:
+      - 3000
+    networks:
+      default:
+        ipv4_address: ${NETWORK_PREFIX}.12
+    working_dir: '/app'
+    volumes:
+      - '${NPM_PATH}:/mnt/cache:rw'
+      # -- configs
+      - './config/processes/cub-cash-collection-admin-bff.sh:/mnt/process.sh'
+      # -- docker-data
+      - './.data/certs:/mnt/certs:rw'
+      # -- c3 sdk
+      - '../cub-cash-collection-sdk:/mnt/c3-sdk'
+      # -- project
+      - '../cub-cash-collection-admin-bff:/app'
+      - '../cub-cash-collection-sdk:/mnt/cub-cash-collection-sdk'
+
+  c3-admin-app:
+    # TODO profiles
+    container_name: ${PROJECT}_c3_admin_app
+    hostname: ${PROJECT}_c3_admin_app
+    build:
+      context: ./docker-image
+      dockerfile: Dockerfile
+      args:
+        DOCKER_VERSION_NODE: ${DOCKER_VERSION_NODE}
+    image: ${PROJECT}/node:latest
+    restart: unless-stopped
+    environment:
+      HISTFILE: /mnt/bash_history/.bash_history
+      # keys
+      CUB_GIT_PKG_TOKEN: '${CUB_GIT_PKG_TOKEN}'
+      # Node
+      BIN_TARGET: '["native"]'
+      XDG_CACHE_HOME: /mnt/cache/
+      # ENV
+      ENV: '${ENV}'
+      #DEBUG: 'express:*'
+    expose:
+      - 3000
+      - 3001
+    networks:
+      default:
+        ipv4_address: ${NETWORK_PREFIX}.13
+    working_dir: '/app'
+    volumes:
+      - '${NPM_PATH}:/mnt/cache:rw'
+      # -- configs
+      - './config/processes/cub-cash-collection-admin-app.sh:/mnt/process.sh'
+      # -- c3 sdk
+      - '../cub-cash-collection-sdk:/mnt/c3-sdk'
+      # -- project
+      - '../cub-cash-collection-admin-app:/app'
+      - '../cub-cash-collection-sdk:/mnt/cub-cash-collection-sdk'
+
+
+  # -----------
+  # -- Billing Viewer
+  # -----------
+  #TODO billing viewer
